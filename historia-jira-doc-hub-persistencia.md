@@ -1,166 +1,292 @@
-# 🧾 História Jira --- Implementação da Persistência do Doc Hub (Spring Boot + Spring Data + MySQL)
+Formato e organização dos arquivos de documentação
 
-------------------------------------------------------------------------
+A documentação final deve ser gerada em Markdown (.md) e armazenada dentro do próprio projeto.
 
-## 🎯 Objetivo
+Crie uma estrutura de documentação organizada, navegável e fácil de manter.
 
-Implementar a camada completa de persistência do serviço **Doc Hub**,
-alinhada ao DDL oficial do schema `db_doc_hub`, utilizando **Spring
-Boot + Spring Data JPA + MySQL**, garantindo:
+Diretório principal
 
--   Escrita consistente em todas as tabelas do pipeline
--   Status implementados como **Enum persistido como STRING**
--   Idempotência baseada em constraints do banco
--   Implementação do padrão **Outbox**
--   Pipeline auditável ponta a ponta
+Crie a documentação dentro do diretório:
 
-------------------------------------------------------------------------
+docs/
 
-# 📌 Escopo da Implementação
+O ponto de entrada obrigatório da documentação deve ser:
 
-## 1️⃣ Entidades e Repositórios
+docs/README.md
 
-Mapear entidades JPA para:
+Esse arquivo deve funcionar como a página inicial da documentação e conter:
 
--   `requisicao_documento`
--   `execucao_etapa_documento`
--   `saida_etapa_documento`
--   `envio_documento`
--   `evento_envio_documento`
--   `outbox_requisicao_documento`
+* nome da aplicação;
+* descrição e objetivo;
+* visão geral do sistema;
+* resumo da arquitetura;
+* principais módulos/componentes;
+* links para as demais documentações;
+* índice navegável.
 
-### Regras obrigatórias
+Organização da documentação
 
--   Todos os campos `status` devem ser mapeados com
-    `@Enumerated(EnumType.STRING)`
--   Nunca utilizar `EnumType.ORDINAL`
--   UNIQUE constraints devem ser respeitadas para garantir idempotência
--   Atualizações críticas podem utilizar `@Query` com SQL nativo quando
-    necessário
+Não é obrigatório colocar toda a documentação em um único arquivo.
 
-------------------------------------------------------------------------
+Para aplicações pequenas, um único docs/README.md pode ser suficiente.
 
-# 📌 Definição Oficial dos Enums de Status
+Para aplicações médias ou grandes, prefira dividir a documentação em múltiplos arquivos Markdown, agrupando assuntos relacionados.
 
-> Todos devem ser implementados como Enum persistido como STRING.
+Exemplo de estrutura:
 
-------------------------------------------------------------------------
+docs/
+├── README.md
+├── architecture/
+│   ├── overview.md
+│   ├── modules.md
+│   └── dependencies.md
+├── domain/
+│   ├── overview.md
+│   ├── entities.md
+│   └── business-rules.md
+├── flows/
+│   ├── README.md
+│   ├── fluxo-a.md
+│   ├── fluxo-b.md
+│   └── fluxo-c.md
+├── api/
+│   └── endpoints.md
+├── messaging/
+│   ├── overview.md
+│   ├── consumers.md
+│   └── producers.md
+├── persistence/
+│   ├── overview.md
+│   └── data-model.md
+├── integrations/
+│   └── external-services.md
+├── operations/
+│   ├── configuration.md
+│   ├── observability.md
+│   └── error-handling.md
+└── glossary.md
 
-## ✅ StatusRequisicaoDocumento
+Essa estrutura é apenas uma referência. Adapte-a à arquitetura e às características reais da aplicação.
 
-(Tabela: `requisicao_documento.status` --- varchar(40))
+Não crie arquivos vazios, redundantes ou artificiais apenas para seguir essa estrutura.
 
-**Opções permitidas:**
+Critério para divisão dos arquivos
 
--   RECEBIDA\
--   EM_PROCESSAMENTO\
--   AGUARDANDO_ENVIO\
--   ENVIADA\
--   CONCLUIDA\
--   FALHA_FINAL\
--   CANCELADA
+Crie um arquivo separado quando um assunto:
 
-------------------------------------------------------------------------
+* possuir conteúdo suficientemente relevante;
+* representar um fluxo funcional importante;
+* representar um módulo significativo;
+* possuir muitas regras de negócio;
+* precisar de diagramas próprios;
+* tiver potencial de evoluir independentemente;
+* tornar o arquivo principal excessivamente grande.
 
-## ✅ StatusExecucaoEtapa
+Agrupe assuntos pequenos e diretamente relacionados no mesmo arquivo.
 
-(Tabela: `execucao_etapa_documento.status` --- varchar(30))
+Priorize coesão em vez de quantidade de arquivos.
 
-**Opções permitidas:**
+Documentação dos fluxos
 
--   INICIADA\
--   SUCESSO\
--   FALHA\
--   IGNORADA
+Fluxos de negócio importantes podem possuir arquivos próprios.
 
-------------------------------------------------------------------------
+Exemplo:
 
-## ✅ StatusEnvioDocumento
+docs/flows/processamento-documento.md
 
-(Tabela: `envio_documento.status` --- varchar(30))
+Cada fluxo deve explicar, quando aplicável:
 
-**Opções permitidas:**
+1. objetivo;
+2. trigger;
+3. pré-condições;
+4. entrada;
+5. fluxo principal passo a passo;
+6. decisões e bifurcações;
+7. regras de negócio;
+8. componentes/classes envolvidos;
+9. persistência;
+10. integrações;
+11. mensageria;
+12. tratamento de erros;
+13. resultado;
+14. estados envolvidos;
+15. diagrama de sequência ou fluxo.
 
--   SOLICITADO\
--   ENVIANDO\
--   ENVIADO\
--   ENTREGUE\
--   FALHA\
--   CANCELADO
+O objetivo é permitir que um desenvolvedor compreenda o processo ponta a ponta sem precisar descobrir sozinho a sequência navegando pelo código.
 
-------------------------------------------------------------------------
+Diagramas
 
-## ✅ StatusOutbox
+Inclua diagramas Mermaid diretamente nos arquivos Markdown sempre que ajudarem na compreensão.
 
-(Tabela: `outbox_requisicao_documento.status` --- varchar(20))
+Exemplo:
 
-**Opções permitidas:**
+sequenceDiagram
+    participant Controller
+    participant UseCase
+    participant Repository
+    participant ExternalService
+    Controller->>UseCase: executa operação
+    UseCase->>Repository: consulta dados
+    UseCase->>ExternalService: executa integração
+    ExternalService-->>UseCase: resultado
+    UseCase-->>Controller: resposta
 
--   PENDENTE\
--   PROCESSANDO\
--   PUBLICADO\
--   ERRO
+Utilize o tipo de diagrama mais apropriado:
 
-------------------------------------------------------------------------
+* flowchart para processos e arquitetura;
+* sequenceDiagram para chamadas e fluxos ponta a ponta;
+* classDiagram para estruturas importantes do domínio;
+* stateDiagram-v2 para ciclos de vida e transições de estado.
 
-# 📌 Serviços de Aplicação --- Assinaturas dos Métodos
+Não crie diagramas meramente decorativos.
 
-## 🔹 Requisição
+Navegação
 
-``` java
-RequisicaoDocumento criarOuObter(...);
-Optional<RequisicaoDocumento> buscarPorId(long idRequisicao);
-Optional<RequisicaoDocumento> buscarPorChave(String chaveRequisicao);
-RequisicaoDocumento atualizarStatus(...);
-RequisicaoDocumento atualizarEtapaAtual(...);
-RequisicaoDocumento concluir(...);
-RequisicaoDocumento marcarFalhaFinal(...);
-```
+Todos os arquivos devem ser facilmente acessíveis a partir de docs/README.md.
 
-## 🔹 Execução de Etapa
+Utilize links relativos entre os documentos.
 
-``` java
-ExecucaoEtapaDocumento iniciarEtapa(...);
-Optional<ExecucaoEtapaDocumento> buscarPorId(long idExecucaoEtapa);
-Optional<ExecucaoEtapaDocumento> buscarUltimaExecucao(...);
-ExecucaoEtapaDocumento finalizarEtapaSucesso(...);
-ExecucaoEtapaDocumento finalizarEtapaFalha(...);
-```
+Exemplo:
 
-## 🔹 Saída de Etapa
+## Documentação
+- [Arquitetura](architecture/overview.md)
+- [Domínio](domain/overview.md)
+- [Regras de negócio](domain/business-rules.md)
+- [Fluxos](flows/README.md)
+- [APIs](api/endpoints.md)
+- [Mensageria](messaging/overview.md)
+- [Persistência](persistence/overview.md)
+- [Integrações](integrations/external-services.md)
+- [Configuração](operations/configuration.md)
+- [Observabilidade](operations/observability.md)
+- [Glossário](glossary.md)
 
-``` java
-SaidaEtapaDocumento salvarSaida(...);
-SaidaEtapaDocumento salvarOuAtualizarSaida(...);
-List<SaidaEtapaDocumento> listarPorExecucao(...);
-```
+Quando uma seção possuir vários documentos, crie um README.md para funcionar como índice local somente quando isso realmente melhorar a navegação.
 
-## 🔹 Envio
+Referências ao código
 
-``` java
-EnvioDocumento criarEnvio(...);
-Optional<EnvioDocumento> buscarPorId(...);
-List<EnvioDocumento> listarPorRequisicao(...);
-EnvioDocumento atualizarStatus(...);
-EnvioDocumento marcarEnviado(...);
-EnvioDocumento marcarEntregue(...);
-```
+Sempre que possível, utilize referências relativas para arquivos importantes do código-fonte.
 
-## 🔹 Evento de Envio
+Exemplo:
 
-``` java
-EventoEnvioDocumento registrarEvento(...);
-boolean existePorEventoExterno(...);
-List<EventoEnvioDocumento> listarPorEnvio(...);
-```
+A entrada deste fluxo ocorre através de
+[`DocumentoController`](../src/main/java/.../DocumentoController.java).
 
-## 🔹 Outbox
+Ao mencionar uma regra importante, informe a classe e, quando relevante, o método responsável pela implementação.
 
-``` java
-OutboxRequisicaoDocumento enfileirarEvento(...);
-List<OutboxRequisicaoDocumento> buscarPendentesParaProcessamento(...);
-OutboxRequisicaoDocumento marcarProcessando(...);
-OutboxRequisicaoDocumento marcarPublicado(...);
-OutboxRequisicaoDocumento reagendarComTentativa(...);
-OutboxRequisicaoDocumento marcarErroFinal(...);
-```
+As referências devem facilitar a navegação entre documentação e implementação.
+
+Não utilize números de linha como referência permanente, pois eles se tornam obsoletos rapidamente.
+
+Fonte da verdade
+
+O código-fonte da aplicação é a principal fonte da verdade.
+
+Considere também:
+
+* testes;
+* migrations;
+* configurações;
+* schemas;
+* contratos;
+* arquivos de infraestrutura;
+* documentação existente.
+
+Caso exista divergência entre documentação existente e implementação, destaque a inconsistência e considere o comportamento implementado no código como referência, salvo quando houver evidência explícita em contrário.
+
+Conteúdo não confirmado
+
+Não apresente hipóteses como fatos.
+
+Quando alguma informação não puder ser confirmada pelo código, utilize uma indicação explícita, por exemplo:
+
+Não confirmado: não foi possível determinar pelo código analisado se este processamento possui garantia de idempotência.
+
+Quando houver uma inferência razoável:
+
+Inferência: este componente aparentemente funciona como mecanismo de idempotência, com base no uso de […].
+
+Essas observações devem ser utilizadas apenas quando realmente necessárias.
+
+Qualidade do Markdown
+
+Os arquivos devem utilizar Markdown limpo e compatível com renderizadores comuns, especialmente GitHub.
+
+Utilize corretamente:
+
+* títulos e subtítulos;
+* listas;
+* tabelas;
+* blocos de código;
+* Mermaid;
+* links relativos;
+* citações e observações quando necessárias.
+
+Mantenha uma hierarquia consistente de títulos.
+
+Evite HTML dentro dos arquivos Markdown, salvo quando estritamente necessário.
+
+Linguagem
+
+A documentação deve ser escrita em português do Brasil, mantendo nomes técnicos, classes, métodos, endpoints, eventos, tópicos, campos e conceitos do código em sua nomenclatura original.
+
+Não traduza nomes existentes no código.
+
+Nível de detalhe
+
+Não gere documentação apenas para aumentar volume.
+
+Priorize informações que ajudem um engenheiro a:
+
+* compreender o sistema;
+* realizar onboarding;
+* investigar problemas;
+* alterar regras de negócio;
+* implementar novas funcionalidades;
+* compreender impactos de mudanças;
+* identificar integrações e dependências;
+* acompanhar um fluxo do início ao fim.
+
+Evite documentar getters, setters, constructors, DTOs triviais ou classes autoexplicativas individualmente, salvo quando forem importantes para compreender algum contrato ou comportamento.
+
+Consistência entre documentos
+
+Antes de finalizar, revise toda a documentação gerada verificando:
+
+* links quebrados;
+* informações contraditórias;
+* nomenclaturas inconsistentes;
+* fluxos incompletos;
+* regras mencionadas em um documento e contraditas em outro;
+* diagramas incompatíveis com a descrição textual;
+* arquivos que deveriam estar referenciados no índice;
+* documentação duplicada desnecessariamente.
+
+A documentação deve funcionar como um conjunto coeso, e não como vários textos independentes gerados isoladamente.
+
+Atualização do README principal do projeto
+
+Não substitua nem reescreva automaticamente o README.md existente na raiz do projeto.
+
+A documentação técnica detalhada deve permanecer em docs/.
+
+Caso seja apropriado, sugira adicionar ao README.md principal apenas um link para:
+
+docs/README.md
+
+Não altere outros arquivos do projeto que não sejam necessários para produzir a documentação.
+
+Entrega final
+
+Ao concluir a geração, apresente:
+
+1. a árvore de arquivos Markdown criados;
+2. um resumo do conteúdo de cada arquivo;
+3. os principais fluxos documentados;
+4. as principais regras de negócio identificadas;
+5. os diagramas criados;
+6. informações que não puderam ser determinadas com segurança;
+7. inconsistências encontradas entre código, testes, configurações ou documentação existente;
+8. possíveis lacunas que deveriam ser esclarecidas pela equipe.
+
+Antes de considerar o trabalho concluído, valide que docs/README.md permite navegar para toda a documentação relevante criada.
